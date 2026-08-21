@@ -138,17 +138,17 @@ python -m app.query_process.api.query_server
 
 ## 📊 评估指标（真实运行）
 
-运行 `python -m app.eval.ragas_eval`（基于 `app/eval/sample_dataset.json` 的技术文档问答样本）：
+运行 `python -m app.eval.eval_full`（合并 `sample_dataset.json` 与 `eval_dataset_v2.json`，共 54 条技术文档问答样本）：
 
-| 指标 | 实测值 |
+| 指标 | 实测值（54 条） |
 |------|--------|
-| faithfulness（忠实度） | `0.898` |
-| answer_relevancy（答案相关性） | `0.761` |
-| context_precision（上下文精确度） | `0.900` |
-| context_recall（上下文召回率） | `1.000` |
+| faithfulness（忠实度） | `0.886` |
+| answer_relevancy（答案相关性） | `0.830` |
+| context_precision（上下文精确度） | `0.917` |
+| context_recall（上下文召回率） | `0.971` |
 | 平均首字延迟（TTFT） | `~507 ms`（5 次问答均值，范围 368–659 ms） |
 
-> 数值为 10 条技术文档问答样本的 RAGAS 均值（详见 `app/eval/ragas_report.json`）。`context_recall` 满分、`context_precision` 0.90 说明检索召回质量高、噪声少；`faithfulness` 0.90 表明答案基本严格基于检索上下文；`answer_relevancy` 0.76 反映部分答案偏精简、仍有展开空间。样本已覆盖 RAG 基础 / 混合检索 / HyDE / 重排 / 多智能体 / Function Calling+MCP / GraphRAG / Agent 沙箱 / SSE 等核心技术点，建议后续继续扩充（跨文档 / 多跳问题）以提升评估置信度。
+> 数值为 54 条技术文档问答样本的 RAGAS 均值（详见 `app/eval/ragas_report_full.json`）。`context_recall` 0.97、`context_precision` 0.92 说明检索召回质量高、噪声少；`faithfulness` 0.89 表明答案基本严格基于检索上下文。样本覆盖 RAG 基础 / 混合检索 / HyDE / 重排 / RRF / RAGAS / ReAct / Function Calling / LangGraph / MCP / A2A / Prompt 工程 / 微调与 RAG 对比 / Agent 安全 / 工程实践等核心知识点。评估集从 10 条扩充至 54 条：`answer_relevancy` 从 0.76 升至 0.83（此前为小样本波动），说明样本量对评估置信度的影响显著。
 
 ---
 
