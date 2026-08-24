@@ -1,5 +1,7 @@
 # 技术文档智能问答系统
 
+![CI](https://github.com/weikaiwu/rag-agent/actions/workflows/ci.yml/badge.svg)
+
 > 基于 LangGraph 编排的 RAG 应用：面向 Agent / LLM / Python 等技术文档，提供「混合检索 + 重排序 + 流式回答 + 多轮对话」的企业级问答能力。
 
 一套完整的检索增强生成（RAG）系统，覆盖**文档导入**与**问答推理**两条 LangGraph 流水线，支持稠密+稀疏混合向量检索、HyDE 假设性文档增强、加权 RRF 融合、BGE 交叉编码器重排、Web Search 工具调用（MCP）、SSE 流式输出与 MongoDB 多轮记忆。
@@ -18,6 +20,7 @@
 - **多轮记忆**：MongoDB 存储对话历史，支持上下文连续追问。
 - **多模态**：MinIO 存储技术文档配图，答案可引用图片。
 - **可评估**：内置 RAGAS 评估脚本（忠实度 / 相关性 / 上下文精度·召回）。
+- **可测试**：检索链路纯函数（加权 RRF / 动态 TopK 断崖截断 / 过滤表达式）抽离为独立模块，pytest 单元测试 + GitHub Actions CI 自动 lint 与测试。
 
 ---
 

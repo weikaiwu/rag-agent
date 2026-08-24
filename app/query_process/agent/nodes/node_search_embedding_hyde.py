@@ -9,6 +9,7 @@ from app.lm.embedding_utils import *
 from app.clients.milvus_utils import *
 from app.core.logger import logger
 from app.core.load_prompt import load_prompt
+from app.utils.retrieval_utils import build_item_name_expr
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 
@@ -33,11 +34,7 @@ def step_2_search_embedding_hyde(rewritten_query, hyde_doc, item_names):
     embeddings=generate_embeddings([query_str])
     # 3、生成AnnSearchRequest
     # 若已确认 item_names 则按主题过滤；否则（空列表）进行全库全局语义检索
-    if item_names:
-        item_name_str = ','.join(f'"{item}"' for item in item_names)
-        expr = f'item_name in [{item_name_str}]'
-    else:
-        expr = None
+    expr = build_item_name_expr(item_names)
     reqs=create_hybrid_search_requests(
         dense_vector=embeddings['dense'][0],
         sparse_vector=embeddings['sparse'][0],
