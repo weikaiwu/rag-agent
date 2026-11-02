@@ -66,15 +66,33 @@ def step_2_prepare_collections(state):
     return milvus_client
 
 
-def step_3_delete_old_data(milvus_client, item_name):
-    # 根据item_name删除
+def _escape_filter_value(value) -> str:
+    """转义 Milvus filter 表达式中的双引号与反斜杠，避免拼串破坏语法。"""
+    return str(value or "").replace("\\", "\\\\").replace('"', '\\"')
+
+
+def step_3_delete_old_data(milvus_client, item_name, file_title=""):
+    """删除同一文档的旧切片（保证重复导入幂等）。
+
+    删除键必须是 item_name + file_title 联合键：
+    item_name 由 LLM 抽取，不同文档完全可能抽到同一个名字
+    （实测 B1_agent_reasoning_modes 与 F3_agent_harness 都是「LangGraph 多智能体编排」），
+    只按 item_name 删会把先导入那篇的切片一起删掉，导致整篇文档从库里消失。
+    """
     if not milvus_client.has_collection(collection_name=CHUNKS_COLLECTION_NAME):
         logger.warning(f"集合 {CHUNKS_COLLECTION_NAME} 不存在，跳过删除。")
         return
     milvus_client.load_collection(collection_name=CHUNKS_COLLECTION_NAME)
-    milvus_client.delete(collection_name=CHUNKS_COLLECTION_NAME,
-                                    filter=f'item_name == "{item_name}"')
-    # milvus_client.load_collection(collection_name=CHUNKS_COLLECTION_NAME)
+
+    if file_title:
+        expr = (f'item_name == "{_escape_filter_value(item_name)}" '
+                f'and file_title == "{_escape_filter_value(file_title)}"')
+    else:
+        # 兜底：文件名为空时退回单一键（有误删同 item_name 文档的风险）
+        logger.warning("[删除] file_title 为空，退化为仅按 item_name 删除")
+        expr = f'item_name == "{_escape_filter_value(item_name)}"'
+
+    milvus_client.delete(collection_name=CHUNKS_COLLECTION_NAME, filter=expr)
 
 
 def step_4_insert_collections(milvus_client,chunks):
@@ -113,8 +131,10 @@ def node_import_milvus(state: ImportGraphState) -> ImportGraphState:
             raise ValueError('没有chunks数据')
     # 2、获取集合，如果没有就建立一个
         milvus_client = step_2_prepare_collections(state)
-    # 3、删除旧数据
-        step_3_delete_old_data(milvus_client,chunks[0]['item_name'])
+    # 3、删除旧数据（item_name + file_title 联合键，避免同名文档互相覆盖）
+        step_3_delete_old_data(milvus_client,
+                               chunks[0].get('item_name'),
+                               chunks[0].get('file_title', ''))
     # 4、插入chunks的数据
         with_id_chunks=step_4_insert_collections(milvus_client,chunks)
         state['chunks'] = with_id_chunks
