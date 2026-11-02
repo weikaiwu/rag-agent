@@ -1,0 +1,2 @@
+{"timestamp": "2026-08-29T01:42:23", "scene": "triage", "latency_ms": 714.7, "input_tokens": 490, "output_tokens": 57, "total_tokens": 547}
+{"timestamp": "2026-08-29T01:42:31", "scene": "triage", "latency_ms": 551.2, "input_tokens": 490, "output_tokens": 56, "total_tokens": 546}

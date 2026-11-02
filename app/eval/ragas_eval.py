@@ -11,7 +11,7 @@ RAGAS 全链路评估模块
   1. 完全复用项目已有的大模型客户端(get_llm_client)与 BGE-M3 向量客户端(generate_embeddings)，
      不引入任何额外模型配置，保证评估口径与线上一致。
   2. 评估数据集来自 sample_dataset.json（技术文档领域样例），可替换为自己的标注集。
-  3. 结果同时打印并落盘为 ragas_report.json，便于写进简历 / README 作为质量证据。
+  3. 结果同时打印并落盘为 ragas_report.json，便于横向对比每次迭代的检索质量变化。
 
 运行：
   cd 项目根目录

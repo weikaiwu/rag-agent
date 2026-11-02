@@ -1,0 +1,2 @@
+{"timestamp": "2026-08-29T01:42:30", "session_id": "p6-0", "question": "你们家支持分期付款吗？", "intent": "policy", "reason": "low_confidence_0.001"}
+{"timestamp": "2026-08-29T01:42:36", "session_id": "p6-1", "question": "会员积分可以换成现金吗？", "intent": "policy", "reason": "low_confidence_0.000"}
