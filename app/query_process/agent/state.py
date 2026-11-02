@@ -28,6 +28,20 @@ class QueryGraphState(TypedDict):
     history: list  # 历史对话记录
     is_stream: bool  # 是否流式输出标记
 
+    # 意图路由（客服业务化新增）
+    intent: str  # Triage 意图分类结果：order_status/logistics/policy/complex_aftersale/chitchat
+    order_id: str  # 从对话中提取的订单号（DD+12位数字），无则为空
+    confidence: float  # 意图分类置信度（0-1），低于阈值会兜底到 FAQ 主链路
+    escalate_reason: str  # 转人工原因（P4 使用：低置信/多轮未解决/用户要求/涉及赔付）
+
+    # 置信度/转人工（P4 新增，必须定义在 TypedDict 中 LangGraph 才会传递）
+    escalate: bool  # 是否触发转人工（confidence_check 输出）
+    retrieval_confidence: float  # 检索 top1 重排分数（confidence_check 输出）
+    escalate_ticket: dict  # 转人工工单对象（escalation 输出）
+
+    # 图片 URL 列表（answer_output 输出，SSE 配图用）
+    image_urls: list
+
 
 # ========================
 # 默认状态（全部为空）
@@ -45,7 +59,15 @@ query_graph_default_state: QueryGraphState = {
     "item_names": [],
     "rewritten_query": "",
     "history": [],
-    "is_stream": False
+    "is_stream": False,
+    "intent": "",
+    "order_id": "",
+    "confidence": 0.0,
+    "escalate_reason": "",
+    "escalate": False,
+    "retrieval_confidence": 0.0,
+    "escalate_ticket": {},
+    "image_urls": []
 }
 
 

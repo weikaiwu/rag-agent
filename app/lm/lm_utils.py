@@ -73,5 +73,49 @@ def get_llm_client(model: Optional[str] = None, json_mode: bool = False) -> Chat
     return llm_client
 
 
-# 测试示例：验证客户端创建、缓存机制及日志输出
+# ===================== LLM 调用可观测（P6） =====================
+# 每次 LLM 调用记录耗时 + token 用量，追加写入 eval/llm_metrics.jsonl
+# 复用 TTFT 的"独立落盘、不受日志级别限制"思路，线上排查全靠它
+import time
+import json
+from datetime import datetime
+from pathlib import Path
 
+_LLM_METRICS_PATH = Path(__file__).resolve().parent.parent.parent / "app" / "eval" / "llm_metrics.jsonl"
+
+
+def _extract_tokens(response) -> dict:
+    """从 AIMessage 提取 token 用量（模型未返回 usage 时返回空 dict）"""
+    usage = getattr(response, "usage_metadata", None) or {}
+    return {
+        "input_tokens": usage.get("input_tokens"),
+        "output_tokens": usage.get("output_tokens"),
+        "total_tokens": usage.get("total_tokens"),
+    }
+
+
+def invoke_llm_with_metrics(llm, messages, scene: str = "default"):
+    """
+    带指标的 LLM 调用（P6 可观测）
+    :param llm: get_llm_client() 返回的 ChatOpenAI 实例
+    :param messages: 传给模型的消息列表（同 llm.invoke 用法）
+    :param scene: 调用场景标记（triage/order_query/answer_output 等），便于归类
+    :return: 与 llm.invoke(messages) 一致的响应
+    """
+    t0 = time.time()
+    response = llm.invoke(messages)
+    latency_ms = (time.time() - t0) * 1000
+    tokens = _extract_tokens(response)
+    try:
+        _LLM_METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        record = {
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+            "scene": scene,
+            "latency_ms": round(latency_ms, 1),
+            **tokens,
+        }
+        with open(_LLM_METRICS_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception as e:
+        logger.warning(f"[LLM指标] 落盘失败：{e}")
+    return response

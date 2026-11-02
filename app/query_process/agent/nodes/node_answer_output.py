@@ -3,7 +3,7 @@ from app.utils.sse_utils import push_to_session, SSEEvent
 from app.query_process.agent.state import QueryGraphState
 from app.core.logger import logger
 from app.core.load_prompt import load_prompt
-from app.lm.lm_utils import get_llm_client
+from app.lm.lm_utils import get_llm_client, invoke_llm_with_metrics
 from app.clients.mongo_history_utils import save_chat_message
 import re
 import time
@@ -112,7 +112,7 @@ def step_3_create_answer(state, prompt):
             answer += delta
             push_to_session(state["session_id"], SSEEvent.DELTA, {"delta": delta})
     else:
-        response = model.invoke(prompt)
+        response = invoke_llm_with_metrics(model, prompt, scene="answer_output")
         answer = response.content
         set_task_result(state["session_id"], "answer", answer)
 
