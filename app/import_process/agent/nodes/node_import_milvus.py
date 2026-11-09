@@ -8,7 +8,7 @@ from app.clients.milvus_utils import get_milvus_client
 from app.utils.task_utils import add_running_task, add_done_task
 from app.core.logger import logger
 from app.conf.milvus_config import milvus_config
-from app.utils.escape_milvus_string_utils import escape_milvus_string
+from app.utils.milvus_filter_utils import build_doc_delete_expr
 # 从配置文件读取切片集合名称，与配置解耦，便于环境切换
 CHUNKS_COLLECTION_NAME = milvus_config.chunks_collection
 
@@ -66,32 +66,24 @@ def step_2_prepare_collections(state):
     return milvus_client
 
 
-def _escape_filter_value(value) -> str:
-    """转义 Milvus filter 表达式中的双引号与反斜杠，避免拼串破坏语法。"""
-    return str(value or "").replace("\\", "\\\\").replace('"', '\\"')
-
-
 def step_3_delete_old_data(milvus_client, item_name, file_title=""):
     """删除同一文档的旧切片（保证重复导入幂等）。
 
-    删除键必须是 item_name + file_title 联合键：
-    item_name 由 LLM 抽取，不同文档完全可能抽到同一个名字
-    （实测 B1_agent_reasoning_modes 与 F3_agent_harness 都是「LangGraph 多智能体编排」），
-    只按 item_name 删会把先导入那篇的切片一起删掉，导致整篇文档从库里消失。
+    删除键的选法见 app/utils/milvus_filter_utils.build_doc_delete_expr 的注释：
+    只按 file_title 删，item_name 由 LLM 抽取、既会撞名也会漂移，不能当身份。
     """
     if not milvus_client.has_collection(collection_name=CHUNKS_COLLECTION_NAME):
         logger.warning(f"集合 {CHUNKS_COLLECTION_NAME} 不存在，跳过删除。")
         return
+
+    expr = build_doc_delete_expr(file_title, item_name)
+    if not expr:
+        logger.warning("[删除] file_title 与 item_name 都为空，跳过删除（避免清空全库）")
+        return
+    if not file_title:
+        logger.warning("[删除] file_title 为空，退化为仅按 item_name 删除（有误删同 item_name 文档的风险）")
+
     milvus_client.load_collection(collection_name=CHUNKS_COLLECTION_NAME)
-
-    if file_title:
-        expr = (f'item_name == "{_escape_filter_value(item_name)}" '
-                f'and file_title == "{_escape_filter_value(file_title)}"')
-    else:
-        # 兜底：文件名为空时退回单一键（有误删同 item_name 文档的风险）
-        logger.warning("[删除] file_title 为空，退化为仅按 item_name 删除")
-        expr = f'item_name == "{_escape_filter_value(item_name)}"'
-
     milvus_client.delete(collection_name=CHUNKS_COLLECTION_NAME, filter=expr)
 
 

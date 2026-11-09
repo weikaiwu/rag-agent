@@ -20,7 +20,7 @@ jobs:
         run: pip install pytest ruff loguru python-dotenv
 
       - name: Lint (new code)
-        run: ruff check app/utils/retrieval_utils.py tests/
+        run: ruff check app/utils/retrieval_utils.py app/utils/milvus_filter_utils.py tests/
 
       - name: Run unit tests
         run: pytest tests/ -v
